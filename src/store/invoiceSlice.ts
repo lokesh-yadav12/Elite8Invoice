@@ -209,6 +209,7 @@ export interface InvoiceData {
   // Proposal Templates Data
   proposalData?: any;
   agreementData?: any;
+  taxInvoiceData?: any;
 }
 
 const initialState: InvoiceData = {

@@ -6,6 +6,7 @@ import { Download } from 'lucide-react';
 // Import proposal templates
 import { Proposal as ServiceProposal, ProposalPreview as ServiceProposalPreview } from '../proposal-templates/service-proposal';
 import { Agreement as ServiceAgreement, AgreementPreview as ServiceAgreementPreview } from '../proposal-templates/service-agreement';
+import { TaxInvoice, TaxInvoicePreview } from '../proposal-templates/tax-invoice';
 
 const ProposalApp = () => {
     const { templateType } = useParams<{ templateType: string }>();
@@ -29,65 +30,99 @@ const ProposalApp = () => {
 
 
 
-                
-                    const handleDownloadPDF = async () => {
-                        setIsDownloading(true);
-                        try {
-                            const html2pdf = (await import('html2pdf.js')).default;
-                            const element = previewRef.current;
-                            if (!element) return;
 
-                            // Get all page containers
-                            const pages = element.querySelectorAll('.page-container');
+    const handleDownloadPDF = async () => {
+        setIsDownloading(true);
+        try {
+            const element = previewRef.current;
+            if (!element) return;
 
-                            if (pages.length === 0) return;
+            // Separate handling for tax-invoice - Direct canvas to PDF approach
+            if (templateType === 'tax-invoice') {
+                const html2canvas = (await import('html2canvas')).default;
+                const jsPDF = (await import('jspdf')).default;
 
-                            // Create a temporary container with exact 2 pages and fixed height
-                            const tempContainer = document.createElement('div');
-                            tempContainer.style.width = '210mm';
-                            tempContainer.style.height = '594mm'; // Exactly 2 A4 pages (297mm x 2)
-                            tempContainer.style.lineHeight = '0';
-                            tempContainer.style.fontSize = '0';
-                            tempContainer.style.overflow = 'hidden'; // Prevent any overflow
+                // Get the single page container
+                const pageContainer = element.querySelector('.page-container') as HTMLElement;
+                if (!pageContainer) return;
 
-                            // Clone only first 2 pages
-                            for (let i = 0; i < Math.min(pages.length, 2); i++) {
-                                const clonedPage = pages[i].cloneNode(true) as HTMLElement;
-                                tempContainer.appendChild(clonedPage);
-                            }
+                // Convert to canvas
+                const canvas = await html2canvas(pageContainer, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    width: 794,
+                    height: 1123,
+                    windowWidth: 794,
+                    windowHeight: 1123,
+                    backgroundColor: '#ffffff'
+                });
 
-                            const opt = {
-                                margin: 0,
-                                image: { type: 'jpeg' as const, quality: 1 },
-                                html2canvas: {
-                                    scale: 2,
-                                    useCORS: true,
-                                    logging: false,
-                                    letterRendering: true,
-                                    allowTaint: true,
-                                    height: 2245, // 594mm in pixels (2 pages)
-                                    windowHeight: 2245
-                                },
-                                jsPDF: {
-                                    unit: 'mm' as const,
-                                    format: 'a4' as const,
-                                    orientation: 'portrait' as const
-                                }
-                            };
+                // Create PDF with exact A4 size
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
 
-                            // Generate PDF from temp container
-                            await html2pdf()
-                                .set(opt)
-                                .from(tempContainer)
-                                .save(`${templateType === 'service-proposal' ? 'Service-Proposal' : 'Service-Agreement'}.pdf`);
+                // Convert canvas to image and add to PDF
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
 
-                        } catch (error) {
-                            console.error('Error generating PDF:', error);
-                            alert('Failed to generate PDF. Please try again.');
-                        } finally {
-                            setIsDownloading(false);
-                        }
-                    };
+                // Save PDF
+                pdf.save('Tax-Invoice.pdf');
+
+            } else {
+                // Original code for multi-page documents (service-proposal, service-agreement)
+                const html2pdf = (await import('html2pdf.js')).default;
+                const pages = element.querySelectorAll('.page-container');
+                if (pages.length === 0) return;
+
+                const tempContainer = document.createElement('div');
+                tempContainer.style.width = '210mm';
+                tempContainer.style.height = '594mm';
+                tempContainer.style.lineHeight = '0';
+                tempContainer.style.fontSize = '0';
+                tempContainer.style.overflow = 'hidden';
+
+                // Clone only first 2 pages
+                for (let i = 0; i < Math.min(pages.length, 2); i++) {
+                    const clonedPage = pages[i].cloneNode(true) as HTMLElement;
+                    tempContainer.appendChild(clonedPage);
+                }
+
+                const opt = {
+                    margin: 0,
+                    image: { type: 'jpeg' as const, quality: 1 },
+                    html2canvas: {
+                        scale: 2,
+                        useCORS: true,
+                        logging: false,
+                        letterRendering: true,
+                        allowTaint: true,
+                        height: 2245,
+                        windowHeight: 2245
+                    },
+                    jsPDF: {
+                        unit: 'mm' as const,
+                        format: 'a4' as const,
+                        orientation: 'portrait' as const
+                    }
+                };
+
+                await html2pdf()
+                    .set(opt)
+                    .from(tempContainer)
+                    .save(`${templateType === 'service-proposal' ? 'Service-Proposal' : 'Service-Agreement'}.pdf`);
+            }
+
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
     // Render the appropriate template based on the route
     const renderTemplate = () => {
@@ -98,6 +133,8 @@ const ProposalApp = () => {
                     return <div ref={previewRef}><ServiceProposalPreview /></div>;
                 case 'service-agreement':
                     return <div ref={previewRef}><ServiceAgreementPreview /></div>;
+                case 'tax-invoice':
+                    return <div ref={previewRef}><TaxInvoicePreview /></div>;
                 default:
                     return <div>Template not found</div>;
             }
@@ -108,6 +145,8 @@ const ProposalApp = () => {
                     return <ServiceProposal />;
                 case 'service-agreement':
                     return <ServiceAgreement />;
+                case 'tax-invoice':
+                    return <TaxInvoice />;
                 default:
                     return <div>Template not found</div>;
             }
@@ -120,7 +159,7 @@ const ProposalApp = () => {
             <div className="bg-white border-b border-gray-200 px-6 py-4">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <h1 className="text-2xl font-bold text-gray-900">
-                        {templateType === 'service-proposal' ? 'Service Proposal' : 'Service Agreement'}
+                        {templateType === 'service-proposal' ? 'Service Proposal' : templateType === 'service-agreement' ? 'Service Agreement' : 'Tax Invoice'}
                     </h1>
                     <div className="flex gap-4">
                         <button

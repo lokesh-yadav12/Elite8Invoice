@@ -215,6 +215,31 @@ const HorizontalScrollWorkflow = () => {
 				</div>
 			),
 		},
+		{
+			title: 'Tax Invoice',
+			description: 'Create professional tax invoices with company header and detailed billing.',
+			buttonText: 'Create Tax Invoice',
+			route: '/proposal/tax-invoice',
+			featured: true,
+			icon: (
+				<div className="w-32 sm:w-36 md:w-40 h-38 sm:h-42 md:h-48 mb-2 bg-white rounded-xl shadow-lg p-4 md:p-6">
+					<div className="text-xs sm:text-sm font-semibold text-gray-700 mb-3 md:mb-4">Tax Invoice</div>
+					<div className="space-y-2 md:space-y-3">
+						<div className="flex gap-1">
+							<div className="h-1.5 md:h-2 w-12 md:w-16 bg-cyan-400 rounded"></div>
+							<div className="h-1.5 md:h-2 w-8 md:w-12 bg-blue-900 rounded"></div>
+						</div>
+						<div className="h-1 md:h-1.5 w-20 md:w-24 bg-gray-300 rounded"></div>
+						<div className="h-1 md:h-1.5 w-16 md:w-20 bg-gray-300 rounded"></div>
+						<div className="border border-gray-400 rounded p-1 mt-2">
+							<div className="h-1 md:h-1.5 w-12 md:w-16 bg-gray-400 rounded mb-1"></div>
+							<div className="h-1 md:h-1.5 w-10 md:w-14 bg-gray-300 rounded"></div>
+						</div>
+						<div className="text-lg md:text-xl font-bold text-cyan-600 mt-2">💰</div>
+					</div>
+				</div>
+			),
+		},
 	];
 
 	useEffect(() => {
